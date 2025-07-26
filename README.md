@@ -23,10 +23,14 @@ A simple YouTube video downloader with a graphical interface, built in Python us
 ## 🖥️ Features
 
 - ✅ Download YouTube videos with one click
-- ✅ "Audio only" mode (MP3)
+- ✅ Download entire playlists by pasting a playlist URL (downloads all items automatically)
+- ✅ "Audio only" mode (choose audio format: mp3, aac, wav, m4a, opus)
+- ✅ Choose video format (mp4, avi, mkv, webm)
 - ✅ Destination folder selector
 - ✅ Progress bar
+- ✅ Download list with status for each video (pending, downloading, completed, error)
 - ✅ "Download complete!" message
+- ✅ Resumes interrupted downloads automatically
 - ✅ No command line required
 
 ---
@@ -46,3 +50,4 @@ python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 python main.py
+```
