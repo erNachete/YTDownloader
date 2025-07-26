@@ -374,8 +374,3 @@ def crear_interfaz():
 
     chequear_progreso()
     ventana.mainloop()
-            pass
-        ventana.after(100, chequear_progreso)
-
-    chequear_progreso()
-    ventana.mainloop()
