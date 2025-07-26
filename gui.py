@@ -29,7 +29,7 @@ def crear_interfaz():
     entrada_url.grid(row=1, column=0, padx=5, pady=5, sticky="we")
 
     # --- Options Section ---
-    # Section for download options: audio only and video quality
+    # Section for download options: audio only, video quality, and format
     frame_opciones = ttk.LabelFrame(ventana, text="Download Options")
     frame_opciones.grid(row=1, column=0, columnspan=3, padx=10, pady=5, sticky="we")
 
@@ -42,16 +42,18 @@ def crear_interfaz():
         """
         if var_audio.get():
             selector_calidad.configure(state="disabled")
-            etiqueta_audio.grid(row=2, column=0, columnspan=2, pady=2, sticky="w")
+            etiqueta_audio.grid(row=2, column=0, columnspan=3, pady=2, sticky="w")
+            selector_formato.configure(state="disabled")
         else:
             selector_calidad.configure(state="readonly")
             etiqueta_audio.grid_remove()
+            selector_formato.configure(state="readonly")
     ttk.Checkbutton(
         frame_opciones,
         text="Audio only",
         variable=var_audio,
         command=actualizar_estado_calidad
-    ).grid(row=0, column=0, columnspan=2, pady=5, sticky="w")
+    ).grid(row=0, column=0, columnspan=3, pady=5, sticky="w")
 
     ttk.Label(frame_opciones, text="Video quality:").grid(row=1, column=0, sticky="w")
     opciones_calidad = {
@@ -70,12 +72,24 @@ def crear_interfaz():
     )
     selector_calidad.grid(row=1, column=1, pady=5, padx=5, sticky="we")
 
+    # Format selection
+    ttk.Label(frame_opciones, text="Format:").grid(row=1, column=2, sticky="w", padx=(10,0))
+    formatos_disponibles = ["mp4", "avi", "mkv", "webm"]
+    var_formato = tk.StringVar(value="mp4")
+    selector_formato = ttk.Combobox(
+        frame_opciones,
+        textvariable=var_formato,
+        values=formatos_disponibles,
+        state="readonly"
+    )
+    selector_formato.grid(row=1, column=3, pady=5, padx=5, sticky="we")
+
     etiqueta_audio = ttk.Label(
         frame_opciones,
         text="Audio only selected, quality not available",
         foreground="orange"
     )
-    etiqueta_audio.grid(row=2, column=0, columnspan=2, pady=2, sticky="w")
+    etiqueta_audio.grid(row=2, column=0, columnspan=3, pady=2, sticky="w")
     etiqueta_audio.grid_remove()
 
     # --- Folder Section ---
@@ -138,6 +152,7 @@ def crear_interfaz():
         mensaje_estado.set("")
         progreso.set(0)
         calidad_seleccionada = opciones_calidad[var_calidad.get()]
+        formato_seleccionado = var_formato.get()
 
         if not destino:
             etiqueta_carpeta.config(text="⚠️ Select a folder", foreground="red")
@@ -158,6 +173,7 @@ def crear_interfaz():
         def ejecutar_descarga():
             """
             Calls the download function with the selected options.
+            Passes the selected format as an extra argument.
             """
             descargar_video(
                 url,
@@ -165,7 +181,8 @@ def crear_interfaz():
                 destino,
                 actualizar_progreso,
                 notificar_estado,
-                calidad_seleccionada
+                calidad_seleccionada,
+                formato_seleccionado  # Pass format to downloader
             )
 
         threading.Thread(target=ejecutar_descarga, daemon=True).start()
