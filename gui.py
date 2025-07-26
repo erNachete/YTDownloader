@@ -12,7 +12,7 @@ def crear_interfaz():
     """
     ventana = tk.Tk()
     ventana.title("YouTube Downloader")
-    ventana.geometry("500x400")
+    ventana.geometry("700x480")  # Increased width and height
     ventana.resizable(False, False)
 
     ruta_destino = tk.StringVar()
@@ -23,37 +23,56 @@ def crear_interfaz():
     # --- URL Section ---
     # Section for entering the video URL
     frame_url = ttk.LabelFrame(ventana, text="Video Link")
-    frame_url.grid(row=0, column=0, columnspan=3, padx=10, pady=(10, 5), sticky="we")
+    frame_url.grid(row=0, column=0, columnspan=4, padx=10, pady=(10, 5), sticky="we")
     ttk.Label(frame_url, text="Video URL:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-    entrada_url = ttk.Entry(frame_url, width=60)
+    entrada_url = ttk.Entry(frame_url, width=80)
     entrada_url.grid(row=1, column=0, padx=5, pady=5, sticky="we")
 
     # --- Options Section ---
     # Section for download options: audio only, video quality, and format
     frame_opciones = ttk.LabelFrame(ventana, text="Download Options")
-    frame_opciones.grid(row=1, column=0, columnspan=3, padx=10, pady=5, sticky="we")
+    frame_opciones.grid(row=1, column=0, columnspan=4, padx=10, pady=5, sticky="we")
 
     var_audio = tk.BooleanVar()
+
+    # Format selection
+    ttk.Label(frame_opciones, text="Format:").grid(row=1, column=2, sticky="w", padx=(10,0))
+    formatos_video = ["mp4", "avi", "mkv", "webm"]
+    formatos_audio = ["mp3", "aac", "wav", "m4a", "opus"]
+    var_formato = tk.StringVar(value="mp4")
+    selector_formato = ttk.Combobox(
+        frame_opciones,
+        textvariable=var_formato,
+        values=formatos_video,
+        state="readonly",
+        width=15
+    )
+    selector_formato.grid(row=1, column=3, pady=5, padx=5, sticky="we")
 
     def actualizar_estado_calidad():
         """
         Enables or disables the video quality dropdown depending on whether
         'Audio only' is selected. Shows a message if only audio is selected.
+        Also switches format options between video and audio formats.
         """
         if var_audio.get():
             selector_calidad.configure(state="disabled")
-            etiqueta_audio.grid(row=2, column=0, columnspan=3, pady=2, sticky="w")
-            selector_formato.configure(state="disabled")
+            etiqueta_audio.grid(row=2, column=0, columnspan=4, pady=2, sticky="w")
+            selector_formato.configure(state="readonly")
+            selector_formato['values'] = formatos_audio
+            var_formato.set(formatos_audio[0])
         else:
             selector_calidad.configure(state="readonly")
             etiqueta_audio.grid_remove()
             selector_formato.configure(state="readonly")
+            selector_formato['values'] = formatos_video
+            var_formato.set(formatos_video[0])
     ttk.Checkbutton(
         frame_opciones,
         text="Audio only",
         variable=var_audio,
         command=actualizar_estado_calidad
-    ).grid(row=0, column=0, columnspan=3, pady=5, sticky="w")
+    ).grid(row=0, column=0, columnspan=4, pady=5, sticky="w")
 
     ttk.Label(frame_opciones, text="Video quality:").grid(row=1, column=0, sticky="w")
     opciones_calidad = {
@@ -68,34 +87,23 @@ def crear_interfaz():
         frame_opciones,
         textvariable=var_calidad,
         values=list(opciones_calidad.keys()),
-        state="readonly"
+        state="readonly",
+        width=25
     )
     selector_calidad.grid(row=1, column=1, pady=5, padx=5, sticky="we")
-
-    # Format selection
-    ttk.Label(frame_opciones, text="Format:").grid(row=1, column=2, sticky="w", padx=(10,0))
-    formatos_disponibles = ["mp4", "avi", "mkv", "webm"]
-    var_formato = tk.StringVar(value="mp4")
-    selector_formato = ttk.Combobox(
-        frame_opciones,
-        textvariable=var_formato,
-        values=formatos_disponibles,
-        state="readonly"
-    )
-    selector_formato.grid(row=1, column=3, pady=5, padx=5, sticky="we")
 
     etiqueta_audio = ttk.Label(
         frame_opciones,
         text="Audio only selected, quality not available",
         foreground="orange"
     )
-    etiqueta_audio.grid(row=2, column=0, columnspan=3, pady=2, sticky="w")
+    etiqueta_audio.grid(row=2, column=0, columnspan=4, pady=2, sticky="w")
     etiqueta_audio.grid_remove()
 
     # --- Folder Section ---
     # Section for selecting the destination folder
     frame_carpeta = ttk.LabelFrame(ventana, text="Destination Folder")
-    frame_carpeta.grid(row=2, column=0, columnspan=3, padx=10, pady=5, sticky="we")
+    frame_carpeta.grid(row=2, column=0, columnspan=4, padx=10, pady=5, sticky="we")
     def seleccionar_carpeta():
         """
         Opens a dialog to select the destination folder and updates the label.
@@ -115,23 +123,23 @@ def crear_interfaz():
     # --- Progress Section ---
     # Section for showing download progress
     frame_progreso = ttk.LabelFrame(ventana, text="Progress")
-    frame_progreso.grid(row=3, column=0, columnspan=3, padx=10, pady=5, sticky="we")
+    frame_progreso.grid(row=3, column=0, columnspan=4, padx=10, pady=5, sticky="we")
     barra = ttk.Progressbar(
         frame_progreso,
         orient="horizontal",
-        length=400,
+        length=600,
         mode="determinate",
         variable=progreso,
         maximum=100
     )
-    barra.grid(row=0, column=0, columnspan=2, pady=5, padx=5, sticky="we")
+    barra.grid(row=0, column=0, columnspan=3, pady=5, padx=5, sticky="we")
     etiqueta_pct = ttk.Label(frame_progreso, text="0%")
-    etiqueta_pct.grid(row=0, column=2, sticky="w", padx=5)
+    etiqueta_pct.grid(row=0, column=3, sticky="w", padx=5)
 
     # --- Status and Download Section ---
     # Section for status messages and download button
     frame_estado = ttk.LabelFrame(ventana, text="Status")
-    frame_estado.grid(row=4, column=0, columnspan=3, padx=10, pady=5, sticky="we")
+    frame_estado.grid(row=4, column=0, columnspan=4, padx=10, pady=5, sticky="we")
     etiqueta_estado = ttk.Label(frame_estado, textvariable=mensaje_estado, foreground="green")
     etiqueta_estado.grid(row=0, column=0, sticky="w", padx=5)
     ttk.Button(

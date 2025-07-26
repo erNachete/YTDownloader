@@ -37,19 +37,18 @@ def descargar_video(url: str, solo_audio: bool, destino: str, callback_progreso=
         'ffmpeg_location': ffmpeg_path,
         'postprocessors': [],
         'overwrites': True,
-        'merge_output_format': formato if not solo_audio else None,  # Ensures final extension is correct
-        'keepvideo': False,  # Remove temp files after merge/convert
+        'merge_output_format': None if solo_audio else formato,  # Only set for video
+        'keepvideo': False,
     }
 
-    if not solo_audio:
-        # No need to add FFmpegVideoConvertor if using merge_output_format
-        pass
-    else:
+    if solo_audio:
         opciones['postprocessors'].append({
             'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
+            'preferredcodec': formato,
             'preferredquality': '192',
         })
+        # Ensure only the final audio file is kept
+        opciones['outtmpl'] = os.path.join(destino, '%(title)s.%(ext)s')
 
     try:
         with YoutubeDL(opciones) as ydl:
@@ -68,4 +67,5 @@ def descargar_video(url: str, solo_audio: bool, destino: str, callback_progreso=
         if callback_estado:
             callback_estado(f"❌ Error: {str(e)}")
         if callback_estado:
+            callback_estado(f"❌ Error: {str(e)}")
             callback_estado(f"❌ Error: {str(e)}")
