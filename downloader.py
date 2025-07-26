@@ -37,8 +37,12 @@ def descargar_video(url: str, solo_audio: bool, destino: str, callback_progreso=
         'ffmpeg_location': ffmpeg_path,
         'postprocessors': [],
         'overwrites': True,
-        'merge_output_format': None if solo_audio else formato,  # Only set for video
+        'merge_output_format': None if solo_audio else formato,
         'keepvideo': False,
+        'continuedl': True,
+        'ignoreerrors': True,  # Continue on errors (useful for playlists)
+        'yesplaylist': True,   # Always download playlist if URL is a playlist
+        'noplaylist': False,   # Never disable playlist mode
     }
 
     if solo_audio:

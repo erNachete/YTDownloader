@@ -12,8 +12,16 @@ def crear_interfaz():
     """
     ventana = tk.Tk()
     ventana.title("YouTube Downloader")
-    ventana.geometry("700x480")  # Increased width and height
+    ventana.geometry("700x520")  # Increased height for all elements to fit
     ventana.resizable(False, False)
+
+    # Center the window on the screen
+    ventana.update_idletasks()
+    width = 700
+    height = 520
+    x = (ventana.winfo_screenwidth() // 2) - (width // 2)
+    y = (ventana.winfo_screenheight() // 2) - (height // 2)
+    ventana.geometry(f"{width}x{height}+{x}+{y}")
 
     ruta_destino = tk.StringVar()
     mensaje_estado = tk.StringVar()
@@ -120,10 +128,28 @@ def crear_interfaz():
     etiqueta_carpeta = ttk.Label(frame_carpeta, text="Folder: not selected", foreground="gray")
     etiqueta_carpeta.grid(row=0, column=1, padx=5, sticky="w")
 
+    # --- Download List Section ---
+    frame_lista = ttk.LabelFrame(ventana, text="Download List")
+    frame_lista.grid(row=3, column=0, columnspan=4, padx=10, pady=5, sticky="nsew")
+    ventana.grid_rowconfigure(3, weight=0)
+    ventana.grid_columnconfigure(0, weight=1)
+
+    tree = ttk.Treeview(frame_lista, columns=("title", "status"), show="headings", height=3)
+    tree.heading("title", text="Title")
+    tree.heading("status", text="Status")
+    tree.column("title", width=400)
+    tree.column("status", width=120)
+    tree.grid(row=0, column=0, sticky="nsew")
+    frame_lista.grid_rowconfigure(0, weight=1)
+    frame_lista.grid_columnconfigure(0, weight=1)
+
+    # Dict to keep track of video statuses by yt-dlp id or title
+    download_status = {}
+
     # --- Progress Section ---
     # Section for showing download progress
     frame_progreso = ttk.LabelFrame(ventana, text="Progress")
-    frame_progreso.grid(row=3, column=0, columnspan=4, padx=10, pady=5, sticky="we")
+    frame_progreso.grid(row=4, column=0, columnspan=4, padx=10, pady=5, sticky="we")
     barra = ttk.Progressbar(
         frame_progreso,
         orient="horizontal",
@@ -140,15 +166,33 @@ def crear_interfaz():
     # Section for status messages and download button
     frame_estado = ttk.LabelFrame(ventana, text="Status")
     frame_estado.grid(row=4, column=0, columnspan=4, padx=10, pady=5, sticky="we")
-    etiqueta_estado = ttk.Label(frame_estado, textvariable=mensaje_estado, foreground="green", width=70, anchor="w")
-    etiqueta_estado.grid(row=0, column=0, sticky="w", padx=5)
     boton_descargar = ttk.Button(
         frame_estado,
         text="Download",
         command=lambda: on_descargar(),
         width=20  # Fixed width for the button
     )
-    boton_descargar.grid(row=1, column=0, pady=10, padx=5, sticky="w")
+    boton_descargar.grid(row=0, column=0, pady=10, padx=5, sticky="w")
+    etiqueta_estado = ttk.Label(frame_estado, textvariable=mensaje_estado, foreground="green", width=70, anchor="w")
+    etiqueta_estado.grid(row=1, column=0, sticky="w", padx=5)
+
+    # --- Download List Section ---
+    frame_lista = ttk.LabelFrame(ventana, text="Download List")
+    frame_lista.grid(row=3, column=0, columnspan=4, padx=10, pady=5, sticky="nsew")
+    ventana.grid_rowconfigure(3, weight=1)
+    ventana.grid_columnconfigure(0, weight=1)
+
+    tree = ttk.Treeview(frame_lista, columns=("title", "status"), show="headings", height=7)
+    tree.heading("title", text="Title")
+    tree.heading("status", text="Status")
+    tree.column("title", width=400)
+    tree.column("status", width=120)
+    tree.grid(row=0, column=0, sticky="nsew")
+    frame_lista.grid_rowconfigure(0, weight=1)
+    frame_lista.grid_columnconfigure(0, weight=1)
+
+    # Dict to keep track of video statuses by yt-dlp id or title
+    download_status = {}
 
     # --- Download and progress logic ---
     def on_descargar():
@@ -156,6 +200,7 @@ def crear_interfaz():
         Handles the download button click event.
         Starts the download in a separate thread and manages progress updates.
         Checks if the output file already exists before downloading.
+        Supports both single videos and playlists.
         """
         url = entrada_url.get()
         solo_audio = var_audio.get()
@@ -165,56 +210,113 @@ def crear_interfaz():
         calidad_seleccionada = opciones_calidad[var_calidad.get()]
         formato_seleccionado = var_formato.get()
 
-        # Determine output filename
         import os
         from yt_dlp.utils import sanitize_filename
 
-        # Get title (best effort, fallback to 'output')
-        video_title = "output"
+        # Get info for playlist or single video
+        video_entries = []
+        is_playlist = False
         try:
             from yt_dlp import YoutubeDL
-            with YoutubeDL({'quiet': True}) as ydl:
+            with YoutubeDL({'quiet': True, 'extract_flat': True}) as ydl:
                 info = ydl.extract_info(url, download=False)
-                video_title = sanitize_filename(info.get('title', 'output'))
+                if info.get('_type') == 'playlist':
+                    is_playlist = True
+                    video_entries = info.get('entries', [])
+                else:
+                    video_entries = [info]
         except Exception:
-            pass
+            video_entries = []
 
-        if solo_audio:
-            ext = formato_seleccionado
+        # Clear previous list
+        for i in tree.get_children():
+            tree.delete(i)
+        download_status.clear()
+
+        # Populate the list with pending status
+        if video_entries:
+            for entry in video_entries:
+                title = entry.get('title', 'Unknown')
+                vid = entry.get('id', title)
+                tree.insert('', 'end', iid=vid, values=(title, "pending"))
+                download_status[vid] = "pending"
         else:
-            ext = formato_seleccionado
+            # Fallback for unknown/invalid url
+            tree.insert('', 'end', iid="single", values=("Unknown", "pending"))
+            download_status["single"] = "pending"
 
-        output_file = os.path.join(destino, f"{video_title}.{ext}")
+        # For playlist, skip file existence check and download all
 
-        if os.path.exists(output_file):
-            mensaje_estado.set(f"⚠️ File already exists: {output_file}")
-            etiqueta_estado.config(foreground="orange")
-            return
-        else:
-            etiqueta_estado.config(foreground="green")
-
-        def actualizar_progreso(pct):
-            """
-            Callback to update the progress bar from the downloader.
-            """
+        def actualizar_progreso(pct, vid=None):
             progreso_queue.put(pct)
+            # Optionally update status in the list (downloading)
+            if vid and vid in download_status:
+                tree.set(vid, "status", "downloading")
+                download_status[vid] = "downloading"
 
-        def notificar_estado(texto):
-            """
-            Callback to update the status message from the downloader.
-            """
+        def notificar_estado(texto, vid=None):
             mensaje_estado.set(texto)
+            # Optionally update status in the list (finished/error)
+            if vid and vid in download_status:
+                if "completed" in texto.lower():
+                    tree.set(vid, "status", "completed")
+                    download_status[vid] = "completed"
+                elif "error" in texto.lower():
+                    tree.set(vid, "status", "error")
+                    download_status[vid] = "error"
 
         def ejecutar_descarga():
-            descargar_video(
-                url,
-                solo_audio,
-                destino,
-                actualizar_progreso,
-                notificar_estado,
-                calidad_seleccionada,
-                formato_seleccionado
-            )
+            # For playlist, download each entry and update status
+            if is_playlist and video_entries:
+                for entry in video_entries:
+                    title = entry.get('title', 'Unknown')
+                    vid = entry.get('id', title)
+                    tree.set(vid, "status", "downloading")
+                    download_status[vid] = "downloading"
+                    def prog(pct, v=vid):
+                        actualizar_progreso(pct, v)
+                    def estado(txt, v=vid):
+                        notificar_estado(txt, v)
+                    try:
+                        descargar_video(
+                            entry.get('url', url),
+                            solo_audio,
+                            destino,
+                            prog,
+                            estado,
+                            calidad_seleccionada,
+                            formato_seleccionado
+                        )
+                        tree.set(vid, "status", "completed")
+                        download_status[vid] = "completed"
+                    except Exception:
+                        tree.set(vid, "status", "error")
+                        download_status[vid] = "error"
+            else:
+                # Single video
+                vid = video_entries[0].get('id', "single") if video_entries else "single"
+                tree.set(vid, "status", "downloading")
+                download_status[vid] = "downloading"
+                def prog(pct, v=vid):
+                    actualizar_progreso(pct, v)
+                def estado(txt, v=vid):
+                    notificar_estado(txt, v)
+                try:
+                    descargar_video(
+                        url,
+                        solo_audio,
+                        destino,
+                        prog,
+                        estado,
+                        calidad_seleccionada,
+                        formato_seleccionado
+                    )
+                    tree.set(vid, "status", "completed")
+                    download_status[vid] = "completed"
+                except Exception:
+                    tree.set(vid, "status", "error")
+                    download_status[vid] = "error"
+
         threading.Thread(target=ejecutar_descarga, daemon=True).start()
 
     def chequear_progreso():
