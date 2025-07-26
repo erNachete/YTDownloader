@@ -8,3 +8,4 @@ dist/
 *.log
 .idea/
 .vscode/
+generate_icon.py

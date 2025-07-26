@@ -15,6 +15,23 @@ def crear_interfaz():
     ventana.geometry("700x520")  # Increased height for all elements to fit
     ventana.resizable(False, False)
 
+    # Set window icon if available (for both taskbar and window corner)
+    import sys
+    import os
+
+    def resource_path(relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        if hasattr(sys, '_MEIPASS'):
+            return os.path.join(sys._MEIPASS, relative_path)
+        return os.path.join(os.path.dirname(__file__), relative_path)
+
+    icon_path = resource_path("icon.ico")
+    if os.path.exists(icon_path):
+        try:
+            ventana.iconbitmap(default=icon_path)
+        except Exception:
+            pass
+
     # Center the window on the screen
     ventana.update_idletasks()
     width = 700
@@ -271,6 +288,8 @@ def crear_interfaz():
                 for entry in video_entries:
                     title = entry.get('title', 'Unknown')
                     vid = entry.get('id', title)
+                    if not tree.exists(vid):
+                        continue  # Skip if not in the tree
                     tree.set(vid, "status", "downloading")
                     download_status[vid] = "downloading"
                     def prog(pct, v=vid):
@@ -295,8 +314,9 @@ def crear_interfaz():
             else:
                 # Single video
                 vid = video_entries[0].get('id', "single") if video_entries else "single"
-                tree.set(vid, "status", "downloading")
-                download_status[vid] = "downloading"
+                if tree.exists(vid):
+                    tree.set(vid, "status", "downloading")
+                    download_status[vid] = "downloading"
                 def prog(pct, v=vid):
                     actualizar_progreso(pct, v)
                 def estado(txt, v=vid):
@@ -311,11 +331,13 @@ def crear_interfaz():
                         calidad_seleccionada,
                         formato_seleccionado
                     )
-                    tree.set(vid, "status", "completed")
-                    download_status[vid] = "completed"
+                    if tree.exists(vid):
+                        tree.set(vid, "status", "completed")
+                        download_status[vid] = "completed"
                 except Exception:
-                    tree.set(vid, "status", "error")
-                    download_status[vid] = "error"
+                    if tree.exists(vid):
+                        tree.set(vid, "status", "error")
+                        download_status[vid] = "error"
 
         threading.Thread(target=ejecutar_descarga, daemon=True).start()
 
