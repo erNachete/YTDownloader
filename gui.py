@@ -5,6 +5,11 @@ from tkinter import ttk, filedialog
 from downloader import descargar_video
 
 def crear_interfaz():
+    """
+    Initializes and runs the main GUI for the YouTube Downloader application.
+    Organizes the interface into logical sections for URL input, download options,
+    destination folder selection, progress display, and status messages.
+    """
     ventana = tk.Tk()
     ventana.title("YouTube Downloader")
     ventana.geometry("500x400")
@@ -13,20 +18,42 @@ def crear_interfaz():
     ruta_destino = tk.StringVar()
     mensaje_estado = tk.StringVar()
     progreso = tk.DoubleVar()
-    progreso_queue = queue.Queue()  # NUEVA COLA
+    progreso_queue = queue.Queue()
 
-    # URL
-    ttk.Label(ventana, text="URL del vídeo:").pack(pady=(10, 0))
-    entrada_url = ttk.Entry(ventana, width=60)
-    entrada_url.pack(pady=5)
+    # --- URL Section ---
+    # Section for entering the video URL
+    frame_url = ttk.LabelFrame(ventana, text="Video Link")
+    frame_url.grid(row=0, column=0, columnspan=3, padx=10, pady=(10, 5), sticky="we")
+    ttk.Label(frame_url, text="Video URL:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+    entrada_url = ttk.Entry(frame_url, width=60)
+    entrada_url.grid(row=1, column=0, padx=5, pady=5, sticky="we")
+
+    # --- Options Section ---
+    # Section for download options: audio only and video quality
+    frame_opciones = ttk.LabelFrame(ventana, text="Download Options")
+    frame_opciones.grid(row=1, column=0, columnspan=3, padx=10, pady=5, sticky="we")
 
     var_audio = tk.BooleanVar()
-    def actualizar_estado_calidad():
-        selector_calidad.configure(state="disabled" if var_audio.get() else "readonly")
-    ttk.Checkbutton(ventana, text="Solo descargar audio", variable=var_audio, command=actualizar_estado_calidad).pack(pady=5)
 
-    # Quality
-    ttk.Label(ventana, text="Calidad del vídeo:").pack()
+    def actualizar_estado_calidad():
+        """
+        Enables or disables the video quality dropdown depending on whether
+        'Audio only' is selected. Shows a message if only audio is selected.
+        """
+        if var_audio.get():
+            selector_calidad.configure(state="disabled")
+            etiqueta_audio.grid(row=2, column=0, columnspan=2, pady=2, sticky="w")
+        else:
+            selector_calidad.configure(state="readonly")
+            etiqueta_audio.grid_remove()
+    ttk.Checkbutton(
+        frame_opciones,
+        text="Audio only",
+        variable=var_audio,
+        command=actualizar_estado_calidad
+    ).grid(row=0, column=0, columnspan=2, pady=5, sticky="w")
+
+    ttk.Label(frame_opciones, text="Video quality:").grid(row=1, column=0, sticky="w")
     opciones_calidad = {
         "Máxima disponible (4K o más)": "bestvideo+bestaudio/best",
         "Alta (1080p)": "bestvideo[height<=1080]+bestaudio/best[height<=1080]",
@@ -35,32 +62,76 @@ def crear_interfaz():
         "Muy baja (360p)": "bestvideo[height<=360]+bestaudio/best[height<=360]",
     }
     var_calidad = tk.StringVar(value="Media (720p)")
-    selector_calidad = ttk.Combobox(ventana, textvariable=var_calidad, values=list(opciones_calidad.keys()), state="readonly")
-    selector_calidad.pack(pady=5)
+    selector_calidad = ttk.Combobox(
+        frame_opciones,
+        textvariable=var_calidad,
+        values=list(opciones_calidad.keys()),
+        state="readonly"
+    )
+    selector_calidad.grid(row=1, column=1, pady=5, padx=5, sticky="we")
 
-    # Folder
+    etiqueta_audio = ttk.Label(
+        frame_opciones,
+        text="Audio only selected, quality not available",
+        foreground="orange"
+    )
+    etiqueta_audio.grid(row=2, column=0, columnspan=2, pady=2, sticky="w")
+    etiqueta_audio.grid_remove()
+
+    # --- Folder Section ---
+    # Section for selecting the destination folder
+    frame_carpeta = ttk.LabelFrame(ventana, text="Destination Folder")
+    frame_carpeta.grid(row=2, column=0, columnspan=3, padx=10, pady=5, sticky="we")
     def seleccionar_carpeta():
+        """
+        Opens a dialog to select the destination folder and updates the label.
+        """
         ruta = filedialog.askdirectory()
         if ruta:
             ruta_destino.set(ruta)
-            etiqueta_carpeta.config(text=f"Carpeta: {ruta}")
-    ttk.Button(ventana, text="Elegir carpeta destino", command=seleccionar_carpeta).pack()
-    etiqueta_carpeta = ttk.Label(ventana, text="Carpeta: no seleccionada", foreground="gray")
-    etiqueta_carpeta.pack()
+            etiqueta_carpeta.config(text=f"Folder: {ruta}")
+    ttk.Button(
+        frame_carpeta,
+        text="Choose destination folder",
+        command=seleccionar_carpeta
+    ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+    etiqueta_carpeta = ttk.Label(frame_carpeta, text="Folder: not selected", foreground="gray")
+    etiqueta_carpeta.grid(row=0, column=1, padx=5, sticky="w")
 
-    # Progress
-    ttk.Label(ventana, text="Progreso:").pack(pady=(10, 0))
-    barra = ttk.Progressbar(ventana, orient="horizontal", length=400, mode="determinate", variable=progreso, maximum=100)
-    barra.pack(pady=5)
-    etiqueta_pct = ttk.Label(ventana, text="0%")
-    etiqueta_pct.pack()
+    # --- Progress Section ---
+    # Section for showing download progress
+    frame_progreso = ttk.LabelFrame(ventana, text="Progress")
+    frame_progreso.grid(row=3, column=0, columnspan=3, padx=10, pady=5, sticky="we")
+    barra = ttk.Progressbar(
+        frame_progreso,
+        orient="horizontal",
+        length=400,
+        mode="determinate",
+        variable=progreso,
+        maximum=100
+    )
+    barra.grid(row=0, column=0, columnspan=2, pady=5, padx=5, sticky="we")
+    etiqueta_pct = ttk.Label(frame_progreso, text="0%")
+    etiqueta_pct.grid(row=0, column=2, sticky="w", padx=5)
 
-    # Status
-    etiqueta_estado = ttk.Label(ventana, textvariable=mensaje_estado, foreground="green")
-    etiqueta_estado.pack()
+    # --- Status and Download Section ---
+    # Section for status messages and download button
+    frame_estado = ttk.LabelFrame(ventana, text="Status")
+    frame_estado.grid(row=4, column=0, columnspan=3, padx=10, pady=5, sticky="we")
+    etiqueta_estado = ttk.Label(frame_estado, textvariable=mensaje_estado, foreground="green")
+    etiqueta_estado.grid(row=0, column=0, sticky="w", padx=5)
+    ttk.Button(
+        frame_estado,
+        text="Download",
+        command=lambda: on_descargar()
+    ).grid(row=1, column=0, pady=10, padx=5, sticky="we")
 
-    # Download
+    # --- Download and progress logic ---
     def on_descargar():
+        """
+        Handles the download button click event.
+        Starts the download in a separate thread and manages progress updates.
+        """
         url = entrada_url.get()
         solo_audio = var_audio.get()
         destino = ruta_destino.get()
@@ -69,27 +140,44 @@ def crear_interfaz():
         calidad_seleccionada = opciones_calidad[var_calidad.get()]
 
         if not destino:
-            etiqueta_carpeta.config(text="⚠️ Selecciona una carpeta", foreground="red")
+            etiqueta_carpeta.config(text="⚠️ Select a folder", foreground="red")
             return
 
         def actualizar_progreso(pct):
+            """
+            Callback to update the progress bar from the downloader.
+            """
             progreso_queue.put(pct)
 
         def notificar_estado(texto):
+            """
+            Callback to update the status message from the downloader.
+            """
             mensaje_estado.set(texto)
 
         def ejecutar_descarga():
-            descargar_video(url, solo_audio, destino, actualizar_progreso, notificar_estado, calidad_seleccionada)
+            """
+            Calls the download function with the selected options.
+            """
+            descargar_video(
+                url,
+                solo_audio,
+                destino,
+                actualizar_progreso,
+                notificar_estado,
+                calidad_seleccionada
+            )
 
         threading.Thread(target=ejecutar_descarga, daemon=True).start()
 
-    ttk.Button(ventana, text="Descargar", command=on_descargar).pack(pady=10)
-
     def chequear_progreso():
+        """
+        Periodically checks the progress queue and updates the progress bar and label.
+        """
         try:
             while True:
                 pct = progreso_queue.get_nowait()
-                print(f"[PROGRESO] {pct}%")
+                print(f"[PROGRESS] {pct}%")
                 progreso.set(pct)
                 barra['value'] = pct
                 etiqueta_pct.config(text=f"{pct:.1f}%")
