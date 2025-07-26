@@ -82,18 +82,27 @@ See the section "Build Windows Executable" in this README for details on how to 
 
 ```
 ytdwnlr/
-├── build_exe.py
-├── downloader.py
-├── gui.py
-├── main.py
-├── requirements.txt
+├── app/
+│   ├── __init__.py
+│   ├── gui.py
+│   ├── downloader.py
+│   └── main.py
 ├── ffmpeg/
 │   ├── ffmpeg.exe
 │   └── ffprobe.exe
-├── icon.ico
+├── resources/
+│   └── icon.ico
+├── build_exe.py
+├── requirements.txt
 ├── README.md
 └── .gitignore
 ```
+
+- All main Python code is now inside the `app/` folder.
+- ffmpeg binaries are in `ffmpeg/`.
+- The icon and other static resources are in `resources/`.
+- Entry point for running is `app/main.py`.
+- Update your imports accordingly, e.g., `from app.gui import crear_interfaz`.
 
 ---
 
@@ -138,34 +147,6 @@ venv/
 
 - If the icon does not appear in the exe, ensure `icon.ico` exists before building and that you are running the exe from the `dist/` folder.
 - If ffmpeg is not found, make sure the `ffmpeg` folder is present in your project root before building.
-- If you get errors about missing modules, check that all requirements are installed in your virtual environment.
-
----
-icon.ico
-dist/
-build/
-__pycache__/
-*.spec
-venv/
-```
-
----
-
-## 💡 Troubleshooting
-
-- If the icon does not appear in the exe, ensure `icon.ico` exists before building and that you are running the exe from the `dist/` folder.
-- If ffmpeg is not found, make sure the `ffmpeg` folder is present in your project root before building.
-- If you get errors about missing modules, check that all requirements are installed in your virtual environment.
-
----
-
-## 💡 Troubleshooting
-
-- If the icon does not appear in the exe, ensure `icon.ico` exists before building and that you are running the exe from the `dist/` folder.
-- If ffmpeg is not found, make sure the `ffmpeg` folder is present in your project root before building.
-- If you get errors about missing modules, check that all requirements are installed in your virtual environment.
-
----
 - If you get errors about missing modules, check that all requirements are installed in your virtual environment.
 
 ---

@@ -4,10 +4,10 @@ import PyInstaller.__main__
 import os
 
 # Paths
-main_script = 'main.py'  # Use main.py as entry point
-ffmpeg_dir = os.path.join('ffmpeg')  # Folder with ffmpeg.exe and ffprobe.exe
+main_script = os.path.join('app', 'main.py')
+ffmpeg_dir = os.path.join('ffmpeg')
+icon_path = os.path.join('resources', 'icon.ico')
 
-icon_path = 'icon.ico'
 if not os.path.exists(icon_path):
     print("WARNING: icon.ico not found! The executable will use the default icon.")
     icon_arg = ''
@@ -20,7 +20,7 @@ PyInstaller.__main__.run([
     '--onefile',
     '--noconsole',
     f'--add-data={ffmpeg_dir}{os.pathsep}ffmpeg',
-    f'--add-data={icon_path}{os.pathsep}.',  # Embed icon.ico in the exe
+    f'--add-data={icon_path}{os.pathsep}resources',
     '--name=ytdwnlr',
     icon_arg,
 ])
