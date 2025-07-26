@@ -54,7 +54,7 @@ A simple YouTube video downloader with a graphical interface, built in Python us
 
 ## How to use
 
-1. Paste a YouTube video or playlist URL.
+1. Paste a YouTube video, playlist, or channel URL.
 2. (Optional) Select "Audio only" if you want just the audio.
 3. Choose the desired video or audio format.
 4. Select the destination folder.
@@ -86,13 +86,13 @@ ytdwnlr/
 │   ├── __init__.py
 │   ├── gui.py
 │   ├── downloader.py
-│   └── main.py
 ├── ffmpeg/
 │   ├── ffmpeg.exe
 │   └── ffprobe.exe
 ├── resources/
 │   └── icon.ico
 ├── build_exe.py
+├── main.py
 ├── requirements.txt
 ├── README.md
 └── .gitignore
@@ -101,7 +101,7 @@ ytdwnlr/
 - All main Python code is now inside the `app/` folder.
 - ffmpeg binaries are in `ffmpeg/`.
 - The icon and other static resources are in `resources/`.
-- Entry point for running is `app/main.py`.
+- Entry point for running is `main.py` in the project root.
 - Update your imports accordingly, e.g., `from app.gui import crear_interfaz`.
 
 ---
@@ -118,7 +118,7 @@ ytdwnlr/
 
 ## 📝 Notes
 
-- The app supports both single video and playlist URLs. For playlists, all items are downloaded and shown in the download list.
+- The app supports single video, playlist, and channel URLs. For playlists and channels, all items are downloaded and shown in the download list.
 - The download list shows the status of each video: pending, downloading, completed, or error.
 - If you select "Audio only", you can choose the output audio format.
 - If you select video, you can choose the output video format.
@@ -145,7 +145,7 @@ venv/
 
 ## 💡 Troubleshooting
 
-- If the icon does not appear in the exe, ensure `icon.ico` exists before building and that you are running the exe from the `dist/` folder.
+- If the icon does not appear in the exe, ensure `resources/icon.ico` exists before building and that you are running the exe from the `dist/` folder.
 - If ffmpeg is not found, make sure the `ffmpeg` folder is present in your project root before building.
 - If you get errors about missing modules, check that all requirements are installed in your virtual environment.
 
