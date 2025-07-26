@@ -8,9 +8,10 @@ A simple YouTube video downloader with a graphical interface, built in Python us
 
 - **Download individual YouTube videos**: Paste any YouTube video URL and download it directly.
 - **Download entire playlists**: Paste a playlist URL and the app will automatically download all videos in the list.
+- **Download all videos from a channel**: Paste a channel URL and the app will download all public videos from that channel.
 - **Select video quality**: Choose the quality of the video you want to download (from 4K to 360p).
 - **Select output format**: Download videos in your preferred format (mp4, avi, mkv, webm).
-- **Audio only mode**: Download just the audio from a video or playlist, and choose the audio format (mp3, aac, wav, m4a, opus).
+- **Audio only mode**: Download just the audio from a video, playlist, or channel, and choose the audio format (mp3, aac, wav, m4a, opus).
 - **Choose destination folder**: Save your downloads wherever you want.
 - **See download progress**: Visual progress bar and a list showing the status (pending, downloading, completed, error) for each video.
 - **Resume interrupted downloads**: If a download is interrupted, it will continue from where it left off.

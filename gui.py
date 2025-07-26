@@ -230,15 +230,16 @@ def crear_interfaz():
         import os
         from yt_dlp.utils import sanitize_filename
 
-        # Get info for playlist or single video
+        # Get info for playlist, channel, or single video
         video_entries = []
-        is_playlist = False
+        is_playlist_or_channel = False
         try:
             from yt_dlp import YoutubeDL
             with YoutubeDL({'quiet': True, 'extract_flat': True}) as ydl:
                 info = ydl.extract_info(url, download=False)
-                if info.get('_type') == 'playlist':
-                    is_playlist = True
+                # Accept both playlist and channel as multi-video containers
+                if info.get('_type') in ('playlist', 'channel', 'multi_video'):
+                    is_playlist_or_channel = True
                     video_entries = info.get('entries', [])
                 else:
                     video_entries = [info]
@@ -252,49 +253,65 @@ def crear_interfaz():
 
         # Populate the list with pending status
         if video_entries:
+            # Flatten nested entries (e.g., channels with "videos", "shorts", "streams" sections)
+            flat_entries = []
             for entry in video_entries:
+                # If entry is a section (e.g., "videos", "shorts", "streams"), flatten its entries
+                if isinstance(entry, dict) and entry.get('_type') == 'playlist' and 'entries' in entry:
+                    for subentry in entry['entries']:
+                        flat_entries.append(subentry)
+                else:
+                    flat_entries.append(entry)
+            for idx, entry in enumerate(flat_entries):
                 title = entry.get('title', 'Unknown')
-                vid = entry.get('id', title)
-                tree.insert('', 'end', iid=vid, values=(title, "pending"))
-                download_status[vid] = "pending"
+                vid = entry.get('id', None)
+                iid = f"{vid or 'video'}_{idx}"
+                if not tree.exists(iid):
+                    tree.insert('', 'end', iid=iid, values=(title, "pending"))
+                download_status[iid] = "pending"
+                entry['_tree_iid'] = iid
+            # Replace video_entries with the flattened list for the download logic
+            video_entries = flat_entries
         else:
             # Fallback for unknown/invalid url
-            tree.insert('', 'end', iid="single", values=("Unknown", "pending"))
+            if not tree.exists("single"):
+                tree.insert('', 'end', iid="single", values=("Unknown", "pending"))
             download_status["single"] = "pending"
 
-        # For playlist, skip file existence check and download all
+        # For playlist or channel, skip file existence check and download all
 
         def actualizar_progreso(pct, vid=None):
             progreso_queue.put(pct)
-            # Optionally update status in the list (downloading)
             if vid and vid in download_status:
                 tree.set(vid, "status", "downloading")
                 download_status[vid] = "downloading"
 
         def notificar_estado(texto, vid=None):
             mensaje_estado.set(texto)
-            # Optionally update status in the list (finished/error)
             if vid and vid in download_status:
                 if "completed" in texto.lower():
                     tree.set(vid, "status", "completed")
                     download_status[vid] = "completed"
+                    # Scroll to the completed item
+                    tree.see(vid)
                 elif "error" in texto.lower():
                     tree.set(vid, "status", "error")
                     download_status[vid] = "error"
+                    tree.see(vid)
 
         def ejecutar_descarga():
-            # For playlist, download each entry and update status
-            if is_playlist and video_entries:
+            # For playlist or channel, download each entry and update status
+            if is_playlist_or_channel and video_entries:
                 for entry in video_entries:
                     title = entry.get('title', 'Unknown')
-                    vid = entry.get('id', title)
-                    if not tree.exists(vid):
+                    iid = entry.get('_tree_iid', None)
+                    if not iid or not tree.exists(iid):
                         continue  # Skip if not in the tree
-                    tree.set(vid, "status", "downloading")
-                    download_status[vid] = "downloading"
-                    def prog(pct, v=vid):
+                    tree.set(iid, "status", "downloading")
+                    download_status[iid] = "downloading"
+                    def prog(pct, v=iid):
                         actualizar_progreso(pct, v)
-                    def estado(txt, v=vid):
+                    def estado(txt, v=iid):
                         notificar_estado(txt, v)
                     try:
                         descargar_video(
@@ -306,20 +323,21 @@ def crear_interfaz():
                             calidad_seleccionada,
                             formato_seleccionado
                         )
-                        tree.set(vid, "status", "completed")
-                        download_status[vid] = "completed"
+                        tree.set(iid, "status", "completed")
+                        download_status[iid] = "completed"
                     except Exception:
-                        tree.set(vid, "status", "error")
-                        download_status[vid] = "error"
+                        tree.set(iid, "status", "error")
+                        download_status[iid] = "error"
             else:
                 # Single video
                 vid = video_entries[0].get('id', "single") if video_entries else "single"
-                if tree.exists(vid):
-                    tree.set(vid, "status", "downloading")
-                    download_status[vid] = "downloading"
-                def prog(pct, v=vid):
+                iid = f"{vid}_0" if video_entries else "single"
+                if tree.exists(iid):
+                    tree.set(iid, "status", "downloading")
+                    download_status[iid] = "downloading"
+                def prog(pct, v=iid):
                     actualizar_progreso(pct, v)
-                def estado(txt, v=vid):
+                def estado(txt, v=iid):
                     notificar_estado(txt, v)
                 try:
                     descargar_video(
@@ -331,13 +349,13 @@ def crear_interfaz():
                         calidad_seleccionada,
                         formato_seleccionado
                     )
-                    if tree.exists(vid):
-                        tree.set(vid, "status", "completed")
-                        download_status[vid] = "completed"
+                    if tree.exists(iid):
+                        tree.set(iid, "status", "completed")
+                        download_status[iid] = "completed"
                 except Exception:
-                    if tree.exists(vid):
-                        tree.set(vid, "status", "error")
-                        download_status[vid] = "error"
+                    if tree.exists(iid):
+                        tree.set(iid, "status", "error")
+                        download_status[iid] = "error"
 
         threading.Thread(target=ejecutar_descarga, daemon=True).start()
 
