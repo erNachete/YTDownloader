@@ -140,19 +140,22 @@ def crear_interfaz():
     # Section for status messages and download button
     frame_estado = ttk.LabelFrame(ventana, text="Status")
     frame_estado.grid(row=4, column=0, columnspan=4, padx=10, pady=5, sticky="we")
-    etiqueta_estado = ttk.Label(frame_estado, textvariable=mensaje_estado, foreground="green")
+    etiqueta_estado = ttk.Label(frame_estado, textvariable=mensaje_estado, foreground="green", width=70, anchor="w")
     etiqueta_estado.grid(row=0, column=0, sticky="w", padx=5)
-    ttk.Button(
+    boton_descargar = ttk.Button(
         frame_estado,
         text="Download",
-        command=lambda: on_descargar()
-    ).grid(row=1, column=0, pady=10, padx=5, sticky="we")
+        command=lambda: on_descargar(),
+        width=20  # Fixed width for the button
+    )
+    boton_descargar.grid(row=1, column=0, pady=10, padx=5, sticky="w")
 
     # --- Download and progress logic ---
     def on_descargar():
         """
         Handles the download button click event.
         Starts the download in a separate thread and manages progress updates.
+        Checks if the output file already exists before downloading.
         """
         url = entrada_url.get()
         solo_audio = var_audio.get()
@@ -162,9 +165,33 @@ def crear_interfaz():
         calidad_seleccionada = opciones_calidad[var_calidad.get()]
         formato_seleccionado = var_formato.get()
 
-        if not destino:
-            etiqueta_carpeta.config(text="⚠️ Select a folder", foreground="red")
+        # Determine output filename
+        import os
+        from yt_dlp.utils import sanitize_filename
+
+        # Get title (best effort, fallback to 'output')
+        video_title = "output"
+        try:
+            from yt_dlp import YoutubeDL
+            with YoutubeDL({'quiet': True}) as ydl:
+                info = ydl.extract_info(url, download=False)
+                video_title = sanitize_filename(info.get('title', 'output'))
+        except Exception:
+            pass
+
+        if solo_audio:
+            ext = formato_seleccionado
+        else:
+            ext = formato_seleccionado
+
+        output_file = os.path.join(destino, f"{video_title}.{ext}")
+
+        if os.path.exists(output_file):
+            mensaje_estado.set(f"⚠️ File already exists: {output_file}")
+            etiqueta_estado.config(foreground="orange")
             return
+        else:
+            etiqueta_estado.config(foreground="green")
 
         def actualizar_progreso(pct):
             """
@@ -179,10 +206,6 @@ def crear_interfaz():
             mensaje_estado.set(texto)
 
         def ejecutar_descarga():
-            """
-            Calls the download function with the selected options.
-            Passes the selected format as an extra argument.
-            """
             descargar_video(
                 url,
                 solo_audio,
@@ -190,9 +213,8 @@ def crear_interfaz():
                 actualizar_progreso,
                 notificar_estado,
                 calidad_seleccionada,
-                formato_seleccionado  # Pass format to downloader
+                formato_seleccionado
             )
-
         threading.Thread(target=ejecutar_descarga, daemon=True).start()
 
     def chequear_progreso():
