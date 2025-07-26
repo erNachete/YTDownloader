@@ -281,12 +281,15 @@ def crear_interfaz():
         # For playlist or channel, skip file existence check and download all
 
         def actualizar_progreso(pct, vid=None):
+            # Print progress for debugging
+            print(f"[GUI] Progress: {pct}% (vid={vid})")
             progreso_queue.put(pct)
             if vid and vid in download_status:
                 tree.set(vid, "status", "downloading")
                 download_status[vid] = "downloading"
 
         def notificar_estado(texto, vid=None):
+            print(f"[GUI] Status: {texto} (vid={vid})")
             mensaje_estado.set(texto)
             if vid and vid in download_status:
                 if "completed" in texto.lower():
@@ -366,7 +369,6 @@ def crear_interfaz():
         try:
             while True:
                 pct = progreso_queue.get_nowait()
-                print(f"[PROGRESS] {pct}%")
                 progreso.set(pct)
                 barra['value'] = pct
                 etiqueta_pct.config(text=f"{pct:.1f}%")
